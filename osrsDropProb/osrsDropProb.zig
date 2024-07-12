@@ -30,17 +30,17 @@ pub fn main() !void {
                 break;
             },
             .gif => {
-                Actions.gif();
+                actions.gif();
                 reader.waitForInput();
                 clearTerm();
             },
             .gifn => {
-                Actions.gifn();
+                actions.gifn();
                 reader.waitForInput();
                 clearTerm();
             },
             .exact => {
-                Actions.exact();
+                actions.exact();
                 reader.waitForInput();
                 clearTerm();
             },
@@ -99,10 +99,7 @@ fn promptDrops() uint {
     }
 }
 
-fn printWelcome() void {
-    printText("Welcome to the OSRS drop probability calulator!\n\n");
-}
-
+/// prints help message
 fn printHelp() void {
     const helpStr =
         \\Valid commands are the following. Arguments are requested afterwards.
@@ -118,20 +115,24 @@ fn printHelp() void {
     printText(helpStr);
 }
 
+/// clears the terminal and prints welcome message
 fn clearTerm() void {
     print(@import("util.zig").clearTerminal, .{});
-    printWelcome();
+    printText("Welcome to the OSRS drop probability calulator!\n\n");
 }
 
+/// a shortcut to printing without extra arguments
 fn printText(comptime fmt: []const u8) void {
     print(fmt, .{});
 }
 
+/// wrapper around std.io.getStdOut().writer().print()
 fn print(comptime fmt: []const u8, args: anytype) void {
     const stdout = std.io.getStdOut().writer();
     stdout.print(fmt, args) catch {};
 }
 
+/// returns a struct used for reading inputs from stdin
 pub fn StdinReader(comptime capacity: usize) type {
     return struct {
         const Self = @This();
@@ -145,13 +146,14 @@ pub fn StdinReader(comptime capacity: usize) type {
         }
 
         /// reads one line from stdin
-        /// returns null if
+        /// returns an empty string if user enters too many characters
         pub fn read(self: *Self) ![]u8 {
             const stdin = std.io.getStdIn().reader();
+            self.buffer = .{0} ** capacity;
             var bufStream = std.io.fixedBufferStream(&self.buffer);
             stdin.streamUntilDelimiter(bufStream.writer(), '\n', capacity) catch |err| {
                 switch (err) {
-                    error.StreamTooLong => {
+                    error.StreamTooLong => { // too many characters entered
                         self.clear();
                         return self.buffer[0..0];
                     },
@@ -159,6 +161,7 @@ pub fn StdinReader(comptime capacity: usize) type {
                 }
             };
 
+            // slice out string from input until
             for (self.buffer, 0..) |char, index| {
                 if ((char == '\r') or (char == 0) or (index == capacity - 1)) {
                     return self.buffer[0..index];
@@ -179,6 +182,7 @@ pub fn StdinReader(comptime capacity: usize) type {
             }
         }
 
+        /// reads a line from stdin using read() and interprets it as a Cmd enum
         pub fn readCmd(self: *Self) !?Cmd {
             const input = try self.read();
             const eql = std.mem.eql;
@@ -192,16 +196,19 @@ pub fn StdinReader(comptime capacity: usize) type {
             return null;
         }
 
+        /// reads a line from stdin using read() and interprets it as a uint
         pub fn readInt(self: *Self) !uint {
             const input = try self.read();
             return try std.fmt.parseInt(uint, input, 10);
         }
 
+        /// reads a line from stdin using read() and interprets it as a float
         pub fn readFloat(self: *Self) !float {
             const input = try self.read();
             return try std.fmt.parseFloat(float, input);
         }
 
+        /// waits until the user presses Enter
         pub fn waitForInput(self: *Self) void {
             printText("Press Enter to continue\n");
             _ = self.read() catch {};
@@ -209,7 +216,10 @@ pub fn StdinReader(comptime capacity: usize) type {
     };
 }
 
-const Actions = struct {
+/// namespace for actions to be taken on commands received
+const actions = struct {
+    /// promts the user for drop rate and kills
+    /// calls math.probSingleDrop and prints the results
     pub fn gif() void {
         clearTerm();
         printText("What is the probability to receive at least one drop?\n");
@@ -241,6 +251,8 @@ const Actions = struct {
         );
     }
 
+    /// promts the user for drop rate, kills, and drop amount
+    /// calls math.probMultiDrop and prints the result
     pub fn gifn() void {
         clearTerm();
         printText("What is the probability to receive at least N drops?\n");
@@ -275,6 +287,8 @@ const Actions = struct {
         );
     }
 
+    /// promts the user for drop rate, kills, and drop amount
+    /// calls math.probExactDrop and prints the result
     pub fn exact() void {
         clearTerm();
         printText("What is the probability to receive exactly N drops?\n");
