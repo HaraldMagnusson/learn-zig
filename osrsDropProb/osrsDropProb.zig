@@ -49,7 +49,11 @@ pub fn main() !void {
                 reader.waitForInput();
                 clearTerm();
             },
-            else => printText("Command has not been implemented yet.\n"),
+            .when => {
+                actions.when();
+                reader.waitForInput();
+                clearTerm();
+            },
         }
     }
 
@@ -101,6 +105,30 @@ fn promptDrops() uint {
             continue;
         };
         return drops;
+    }
+}
+
+///asks user for a probability in %
+/// returns value as probability 0<P<=1
+fn promptProb() float {
+    printText("Enter a probability of receiving a drop in %: ");
+    var prob: float = undefined;
+    while (true) {
+        prob = reader.readFloat() catch {
+            printText("Enter a valid number between 0 and 100: ");
+            continue;
+        };
+
+        if (prob <= 0 or
+            prob > 100 or
+            std.math.isNan(prob) or
+            std.math.isInf(prob))
+        {
+            printText("Enter a valid number between 0 and 100: ");
+            continue;
+        }
+
+        return prob / 100;
     }
 }
 
@@ -331,7 +359,7 @@ const actions = struct {
     /// prompts the user for drop rate and kills
     /// calls math.probExactDrop multiple times and prints the results
     pub fn drops() void {
-        const maxIter = 1000;
+        const maxIter = 10000;
         clearTerm();
         printText("How many drops can be expected?\n");
 
@@ -349,10 +377,16 @@ const actions = struct {
                 break;
             }
         }
+
+        defer printText("\n");
+        if (param.drops == maxIter) {
+            printText("Maximum iterations reached, drop is too unlikely or variance too large\n");
+            return;
+        }
         const boldStart = @import("util.zig").boldStart;
         const boldEnd = @import("util.zig").boldEnd;
 
-        printText("The probability to receive a certain amount of drops is:\n");
+        printText("\nThe probability to receive a certain amount of drops is:\n");
         printText("(only drops over 0.01% are shown)\n");
         printText(boldStart ++ "drops\tprob(%)\tprob(1/x)\n" ++ boldEnd);
 
@@ -363,5 +397,42 @@ const actions = struct {
             if (result < 0.0001) break;
             print("{d}\t{d:.2}\t1/{d:.2}\n", .{ val, result * 100, 1 / result });
         }
+    }
+
+    /// prompts user for drop rate and probability
+    /// calls math.probSingleDrop to find kills and prints the results
+    pub fn when() void {
+        const maxIter = 100000;
+        clearTerm();
+        printText("How many kc are required to meet a certain drop probability?\n");
+
+        const probDenom = promptDropRate();
+        const probDesired = promptProb();
+        var param = math.Param{
+            .prob = 1 / probDenom,
+        };
+
+        const boldStart = @import("util.zig").boldStart;
+        const boldEnd = @import("util.zig").boldEnd;
+        printText("\nThe amount of kills required to have a given probability to receive\n");
+        printText("at least one drop is:\n");
+        printText(boldStart ++ "kills\tprob(%)\tprob(1/x)\n" ++ boldEnd);
+        defer printText("\n");
+
+        var resultOld: float = 0;
+        var result: float = 0;
+        for (0..maxIter) |kill| {
+            param.kills = kill;
+            resultOld = result;
+            result = math.probSingleDrop(param);
+            if (result >= probDesired) {
+                if (kill > 0) {
+                    print("{d}\t{d:.2}\t{d:.2}\t(last kill under probability)\n", .{ kill - 1, resultOld * 100, 1 / resultOld });
+                }
+                print("{d}\t{d:.2}\t{d:.2}\t(first kill over probability)\n", .{ kill, result * 100, 1 / result });
+                return;
+            }
+        }
+        printText("Maximum iterations reached, drop is too unlikely\n");
     }
 };
