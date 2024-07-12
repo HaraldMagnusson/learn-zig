@@ -44,6 +44,11 @@ pub fn main() !void {
                 reader.waitForInput();
                 clearTerm();
             },
+            .drops => {
+                actions.drops();
+                reader.waitForInput();
+                clearTerm();
+            },
             else => printText("Command has not been implemented yet.\n"),
         }
     }
@@ -321,5 +326,42 @@ const actions = struct {
                 1 / result,
             },
         );
+    }
+
+    /// prompts the user for drop rate and kills
+    /// calls math.probExactDrop multiple times and prints the results
+    pub fn drops() void {
+        const maxIter = 1000;
+        clearTerm();
+        printText("How many drops can be expected?\n");
+
+        const probDenom = promptDropRate();
+        var param = math.Param{
+            .kills = promptKills(),
+            .prob = 1 / probDenom,
+        };
+
+        // find where drops start being likely (can be at 0)
+        for (0..maxIter) |val| {
+            param.drops = val;
+            const result = math.probExactDrop(param);
+            if (result >= 0.0001) {
+                break;
+            }
+        }
+        const boldStart = @import("util.zig").boldStart;
+        const boldEnd = @import("util.zig").boldEnd;
+
+        printText("The probability to receive a certain amount of drops is:\n");
+        printText("(only drops over 0.01% are shown)\n");
+        printText(boldStart ++ "drops\tprob(%)\tprob(1/x)\n" ++ boldEnd);
+
+        // start at point where previous loop stopped
+        for (param.drops..maxIter) |val| {
+            param.drops = val;
+            const result = math.probExactDrop(param);
+            if (result < 0.0001) break;
+            print("{d}\t{d:.2}\t1/{d:.2}\n", .{ val, result * 100, 1 / result });
+        }
     }
 };
