@@ -65,7 +65,7 @@ fn printHelp() void {
     const helpStr =
         \\Valid commands are the following. Arguments are requested afterwards.
         \\    help    - Displays this message
-        \\    exit    - Exit the calulator
+        \\    exit    - Exit the calculator
         \\    gif     - What is the probability to receive at least one drop?
         \\    gifn    - What is the probability to receive at least n drops?
         \\    exact   - What is the probability to receive exactly n drops?
@@ -79,7 +79,7 @@ fn printHelp() void {
 /// clears the terminal and prints welcome message
 fn clearTerm() void {
     print(@import("util.zig").clearTerminal, .{});
-    printText("Welcome to the OSRS drop probability calulator!\n\n");
+    printText("Welcome to the OSRS drop probability calculator!\n\n");
 }
 
 /// a shortcut to printing without extra arguments
@@ -87,7 +87,7 @@ fn printText(comptime fmt: []const u8) void {
     print(fmt, .{});
 }
 
-/// wrapper around std.io.getStdOut().writer().print()
+/// wrapper around std.io.getStdOut().writer().print() to ignore errors
 fn print(comptime fmt: []const u8, args: anytype) void {
     const stdout = std.io.getStdOut().writer();
     stdout.print(fmt, args) catch {};

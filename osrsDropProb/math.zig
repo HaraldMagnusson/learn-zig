@@ -26,7 +26,13 @@ fn nCk(n: uint, k: uint) float {
     return @round(num / denom);
 }
 test "combinations" {
-    const pascalsPyramid: [5][5]float = .{ .{ 1, 0, 0, 0, 0 }, .{ 1, 1, 0, 0, 0 }, .{ 1, 2, 1, 0, 0 }, .{ 1, 3, 3, 1, 0 }, .{ 1, 4, 6, 4, 1 } };
+    const pascalsPyramid: [5][5]float = .{
+        .{ 1, 0, 0, 0, 0 },
+        .{ 1, 1, 0, 0, 0 },
+        .{ 1, 2, 1, 0, 0 },
+        .{ 1, 3, 3, 1, 0 },
+        .{ 1, 4, 6, 4, 1 },
+    };
     var res: float = undefined;
     outer: for (pascalsPyramid, 0..) |row, n| {
         for (row, 0..) |val, k| {
