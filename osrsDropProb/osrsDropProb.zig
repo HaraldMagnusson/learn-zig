@@ -60,78 +60,6 @@ pub fn main() !void {
     printText("exiting\n");
 }
 
-///asks user for kill count
-fn promptKills() uint {
-    printText("Enter the kill count: ");
-    var kills: uint = 0;
-    while (true) {
-        kills = reader.readInt() catch {
-            printText("Enter a valid positive integer: ");
-            continue;
-        };
-        return kills;
-    }
-}
-
-///asks user for drop rate demoninator
-fn promptDropRate() float {
-    printText("Enter the denominator of the drop probability: ");
-    var probDenom: float = undefined;
-    while (true) {
-        probDenom = reader.readFloat() catch {
-            printText("Enter a valid number larger than 1: ");
-            continue;
-        };
-
-        if (probDenom < 1 or
-            std.math.isNan(probDenom) or
-            std.math.isInf(probDenom))
-        {
-            printText("Enter a valid number larger than 1: ");
-            continue;
-        }
-
-        return probDenom;
-    }
-}
-
-///asks user for an amount of drops
-fn promptDrops() uint {
-    printText("Enter the number of drops: ");
-    var drops: uint = 0;
-    while (true) {
-        drops = reader.readInt() catch {
-            printText("Enter a valid positive integer: ");
-            continue;
-        };
-        return drops;
-    }
-}
-
-///asks user for a probability in %
-/// returns value as probability 0<P<=1
-fn promptProb() float {
-    printText("Enter a probability of receiving a drop in %: ");
-    var prob: float = undefined;
-    while (true) {
-        prob = reader.readFloat() catch {
-            printText("Enter a valid number between 0 and 100: ");
-            continue;
-        };
-
-        if (prob <= 0 or
-            prob > 100 or
-            std.math.isNan(prob) or
-            std.math.isInf(prob))
-        {
-            printText("Enter a valid number between 0 and 100: ");
-            continue;
-        }
-
-        return prob / 100;
-    }
-}
-
 /// prints help message
 fn printHelp() void {
     const helpStr =
@@ -249,18 +177,93 @@ pub fn StdinReader(comptime capacity: usize) type {
     };
 }
 
+/// namespace for functions prompting the user for input
+const prompt = struct {
+    ///asks user for kill count
+    pub fn kills() uint {
+        printText("Enter the kill count: ");
+        var input: uint = 0;
+        while (true) {
+            input = reader.readInt() catch {
+                printText("Enter a valid positive integer: ");
+                continue;
+            };
+            return input;
+        }
+    }
+
+    ///asks user for drop rate demoninator
+    pub fn dropRate() float {
+        printText("Enter the denominator of the drop probability: ");
+        var probDenom: float = undefined;
+        while (true) {
+            probDenom = reader.readFloat() catch {
+                printText("Enter a valid number larger than 1: ");
+                continue;
+            };
+
+            if (probDenom < 1 or
+                std.math.isNan(probDenom) or
+                std.math.isInf(probDenom))
+            {
+                printText("Enter a valid number larger than 1: ");
+                continue;
+            }
+
+            return probDenom;
+        }
+    }
+
+    ///asks user for an amount of drops
+    pub fn drops() uint {
+        printText("Enter the number of drops: ");
+        var input: uint = 0;
+        while (true) {
+            input = reader.readInt() catch {
+                printText("Enter a valid positive integer: ");
+                continue;
+            };
+            return input;
+        }
+    }
+
+    ///asks user for a probability in %
+    /// returns value as probability 0<P<=1
+    pub fn prob() float {
+        printText("Enter a probability of receiving a drop in %: ");
+        var input: float = undefined;
+        while (true) {
+            input = reader.readFloat() catch {
+                printText("Enter a valid number between 0 and 100: ");
+                continue;
+            };
+
+            if (input <= 0 or
+                input > 100 or
+                std.math.isNan(input) or
+                std.math.isInf(input))
+            {
+                printText("Enter a valid number between 0 and 100: ");
+                continue;
+            }
+
+            return input / 100;
+        }
+    }
+};
+
 /// namespace for actions to be taken on commands received
 const actions = struct {
-    /// promts the user for drop rate and kills
+    /// prompts the user for drop rate and kills
     /// calls math.probSingleDrop and prints the results
     pub fn gif() void {
         clearTerm();
         printText("What is the probability to receive at least one drop?\n");
 
-        const probDenom = promptDropRate();
+        const probDenom = prompt.dropRate();
 
         const param = math.Param{
-            .kills = promptKills(),
+            .kills = prompt.kills(),
             .prob = 1 / probDenom,
         };
 
@@ -284,16 +287,16 @@ const actions = struct {
         );
     }
 
-    /// promts the user for drop rate, kills, and drop amount
+    /// prompts the user for drop rate, kills, and drop amount
     /// calls math.probMultiDrop and prints the result
     pub fn gifn() void {
         clearTerm();
         printText("What is the probability to receive at least N drops?\n");
 
-        const probDenom = promptDropRate();
+        const probDenom = prompt.dropRate();
         const param = math.Param{
-            .kills = promptKills(),
-            .drops = promptDrops(),
+            .kills = prompt.kills(),
+            .drops = prompt.drops(),
             .prob = 1 / probDenom,
         };
 
@@ -320,16 +323,16 @@ const actions = struct {
         );
     }
 
-    /// promts the user for drop rate, kills, and drop amount
+    /// prompts the user for drop rate, kills, and drop amount
     /// calls math.probExactDrop and prints the result
     pub fn exact() void {
         clearTerm();
         printText("What is the probability to receive exactly N drops?\n");
 
-        const probDenom = promptDropRate();
+        const probDenom = prompt.dropRate();
         const param = math.Param{
-            .kills = promptKills(),
-            .drops = promptDrops(),
+            .kills = prompt.kills(),
+            .drops = prompt.drops(),
             .prob = 1 / probDenom,
         };
 
@@ -363,9 +366,9 @@ const actions = struct {
         clearTerm();
         printText("How many drops can be expected?\n");
 
-        const probDenom = promptDropRate();
+        const probDenom = prompt.dropRate();
         var param = math.Param{
-            .kills = promptKills(),
+            .kills = prompt.kills(),
             .prob = 1 / probDenom,
         };
 
@@ -406,8 +409,8 @@ const actions = struct {
         clearTerm();
         printText("How many kc are required to meet a certain drop probability?\n");
 
-        const probDenom = promptDropRate();
-        const probDesired = promptProb();
+        const probDenom = prompt.dropRate();
+        const probDesired = prompt.prob();
         var param = math.Param{
             .prob = 1 / probDenom,
         };
