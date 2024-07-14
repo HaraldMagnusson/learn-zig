@@ -8,6 +8,10 @@ const math = @import("math.zig");
 const Cmd = enum { help, exit, gif, gifn, exact, drops, when };
 var reader = StdinReader(10).new();
 
+test "force testing of math.zig" {
+    _ = @import("math.zig");
+}
+
 pub fn main() !void {
     clearTerm();
     printHelp();
